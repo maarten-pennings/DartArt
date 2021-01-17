@@ -14,7 +14,9 @@ The figure below shows darts with increasing "convexness" (and thus increasing d
 ![Darts](darts.png)
 
 The whole application is implemented in javascript.
-Just (download and) click [dartart.html](dartart.html).
+Just download and click [dartart.html](dartart.html).
+
+Instead of downloading, you can also run it via [github.io](https://maarten-pennings.github.io/DartArt/dartart.html).
 
 ## Examples
 
@@ -26,7 +28,7 @@ The demo comes with two examples
 
 ![colosseum-dart.jpg](colosseum-dart.png)
 
-![colosseum-dart-zoom.jpg](colosseum-dart-zoom.png)
+![colosseum-dart-zoom.png](colosseum-dart-zoom.png)
 
 ### Tower bridge
 
