@@ -1,0 +1,296 @@
+<!doctype html>
+
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <title>DartArt</title>
+    <meta name="keywords" content="images, art, dart, grayscale">
+    <meta name="description" content="Convert image pixels to small darts, pixel luminance is mapped to convexness of the dart">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Maarten Pennings">
+    <style>
+      .normalbutton   {padding:3px; border: 1px solid black    ; background-color:lightgray; border-radius:6px; color:black   ; }
+      .disabledbutton {padding:3px; border: 1px solid darkgray ; background-color:lightgray; border-radius:6px; color:darkgrey; }
+    </style>
+    <script type="text/javascript">
+      var step0canvas // loaded 
+      var step1canvas // grayscale
+      var step2canvas // darts
+
+      function step3_activate() {
+        // Prepare to read step1canvas
+        var ctx2 = step2canvas.getContext('2d')
+        var data2 = ctx2.getImageData(0,0, step2canvas.width, step2canvas.height)
+        // Prepare to write step3canvas
+        var step3canvas = document.getElementById('step3canvas')
+        step3canvas.width = step2canvas.width
+        step3canvas.height = step2canvas.height
+        var ctx3 = step3canvas.getContext('2d')
+        ctx3.putImageData(data2,0,0)
+      }
+
+      function step2_drawdarts(dartsize, dartmargin, data1, ctx2) {
+        const dartoffset = (dartmargin)/2
+        const dartrange= (dartsize-dartmargin)
+        ctx2.fillStyle = '#F0F0F0' // Maybe FFFFFF is better
+        ctx2.fillRect(0, 0, step2canvas.width, step2canvas.height)
+        for( y=0; y<data1.height; y++ ) {
+          for( x=0; x<data1.width; x++ ) {
+            // Compute index `ix` of pixel (x,y)
+            var ix = x*4 + y*4*data1.width
+            // Get luminance value
+            var lum= data1.data[ix]
+            //if( y<6 && x<6 ) lum = 0 // testing
+            //if( y<3 && x<3 ) lum = 255 // testing
+            //var r= 1+(dartsize-2)*lum/255
+            var r= dartoffset+dartrange*lum/255
+            r = Math.floor(r)
+            // Draw dart
+            ctx2.fillStyle = '#101010' // Maybe 000000 is better
+            ctx2.beginPath();
+            ctx2.moveTo(x*dartsize+dartsize, y*dartsize);
+            ctx2.lineTo(x*dartsize+dartsize, y*dartsize+dartsize);
+            ctx2.lineTo(x*dartsize, y*dartsize+dartsize);
+            ctx2.lineTo(x*dartsize+r, y*dartsize+r);
+            ctx2.closePath();
+            ctx2.fill();
+          }
+        }
+      }
+      function step2_activate() {
+        // Prepare to read step1canvas
+        var ctx1 = step1canvas.getContext('2d')
+        var data1 = ctx1.getImageData(0,0, step1canvas.width, step1canvas.height)
+        // Prepare to write step2canvas
+        step2canvas = document.getElementById('step2canvas')
+        var ctx2 = step2canvas.getContext('2d')
+        // Setup sliders (dart drawing is slow, so here we use onchange, not oninput)
+        var slidersize = document.getElementById('step2sizeslider')
+        var valuesize = document.getElementById('step2sizevalue')
+        var update3 = function() {
+          const dartsize = parseInt(slidersize.value)
+          const dartmargin = parseInt(slidermargin.value)
+          valuesize.innerHTML= dartsize+" pixels"
+          valuemargin.innerHTML= dartmargin+" pixels ("+(dartsize-dartmargin)+" effective)"
+          step2canvas.width = step1canvas.width * dartsize
+          step2canvas.height = step1canvas.height * dartsize
+          step2_drawdarts(dartsize, dartmargin, data1, ctx2)
+        }
+        slidersize.oninput = update3
+        var slidermargin = document.getElementById('step2marginslider')
+        var valuemargin = document.getElementById('step2marginvalue')
+        slidermargin.oninput = update3
+        // Initial convert - dragging sliders will do more converts
+        slidersize.value = 13; 
+        valuesize.innerHTML= slidersize.value
+        slidermargin.value = 2; 
+        valuemargin.innerHTML= slidermargin.value
+        update3()
+      }
+      
+      function step1_grayrange(data) {
+        var nummin=0
+        var nummax=0
+        var lummin = 255
+        var lummax = 0
+        for( y=0; y<data.height; y++ ) {
+          for( x=0; x<data.width; x++ ) {
+            // Compute index `ix` of pixel (x,y)
+            var ix = x*4 + y*4*data.width
+            // Get RGB values
+            var red= data.data[ix+0]
+            var green= data.data[ix+1]
+            var blue= data.data[ix+2]
+            var alpha= data.data[ix+3]
+            // Convert to luminance https://en.wikipedia.org/wiki/YUV#Full_swing_for_BT.601
+            var lum= (77*red + 150*green + 29*blue)/256
+            lum = Math.floor(lum)
+            // Maintain min, max
+            if( lum<lummin ) { lummin=lum; nummin=0 }
+            if( lum>lummax ) { lummax=lum; nummax=0 }
+            // Count min's, max's
+            if( lum==lummin ) nummin++
+            if( lum==lummax ) nummax++
+          }
+        }
+        return [lummin,lummax, nummin, nummax]
+      }
+      function step1_rgb2gray(lummin, lummax, data0,data1) {
+        for( y=0; y<data0.height; y++ ) {
+          for( x=0; x<data0.width; x++ ) {
+            // Compute index `ix` of pixel (x,y)
+            var ix = x*4 + y*4*data0.width
+            // Get RGB values
+            var red= data0.data[ix+0]
+            var green= data0.data[ix+1]
+            var blue= data0.data[ix+2]
+            var alpha= data0.data[ix+3]
+            // Convert to luminance https://en.wikipedia.org/wiki/YUV#Full_swing_for_BT.601
+            var lum= (77*red + 150*green + 29*blue)/256
+            // Map to lummin..lummax
+            lum =255*(lum-lummin)/(lummax-lummin)
+            // Clip and integer
+            if( lum<0 ) lum= 0
+            if( lum>255 ) lum =255
+            lum = Math.floor(lum)
+            // Write to data1
+            data1.data[ix+0]= lum
+            data1.data[ix+1]= lum
+            data1.data[ix+2]= lum
+            data1.data[ix+3]= 255
+          }
+        }
+      }
+      function step1_activate() {
+        // Prepare to read step0canvas
+        var ctx0 = step0canvas.getContext('2d')
+        var data0 =  ctx0.getImageData(0,0, step0canvas.width, step0canvas.height)
+        // Show actual grayscale range
+        const [lummin,lummax,nummin,nummax] = step1_grayrange(data0);
+        var pararange = document.getElementById('step1pararange')
+        pararange.innerHTML = "Luminance range orignal image: "+lummin+" ("+nummin+"\u00D7) .. "+lummax+" ("+nummax+"\u00D7)"
+        // Show adapted counts
+        var paranum = document.getElementById('step1paranum')
+        // Prepare to write step1canvas
+        step1canvas = document.getElementById('step1canvas')
+        step1canvas.width = step0canvas.width
+        step1canvas.height = step0canvas.height
+        var ctx1 = step1canvas.getContext('2d')
+        var data1 =  ctx1.getImageData(0,0, step1canvas.width, step1canvas.height)
+        var update2 = function(lummin,lummax) {
+          step1_rgb2gray(lummin, lummax, data0, data1)
+          ctx1.putImageData(data1,0,0)
+          const [_lummin, _lummax, _nummin, _nummax] = step1_grayrange(data1);
+          paranum.innerHTML = "Luminance range after mapping: "+_lummin+" ("+_nummin+"\u00D7) .. "+_lummax+" ("+_nummax+"\u00D7)"
+        }
+        // Setup sliders
+        var slidermin = document.getElementById('step1yminslider')
+        var valuemin = document.getElementById('step1yminvalue')
+        slidermin.oninput = function(e) { 
+          valuemin.innerHTML= this.value
+          update2(slidermin.value,slidermax.value)
+        }
+        var slidermax = document.getElementById('step1ymaxslider')
+        var valuemax = document.getElementById('step1ymaxvalue')
+        slidermax.oninput = function(e) { 
+          valuemax.innerHTML= this.value
+          update2(slidermin.value,slidermax.value)
+        }
+        // Initial convert - dragging sliders will do more converts
+        slidermin.value = lummin; 
+        valuemin.innerHTML= slidermin.value
+        slidermax.value = lummax; 
+        valuemax.innerHTML= slidermax.value
+        update2(slidermin.value,slidermax.value)
+      }
+      
+      function step0_onload() {
+        step0canvas = document.getElementById('step0canvas')
+        step0canvas.width = this.width
+        step0canvas.height = this.height
+        var ctx = step0canvas.getContext('2d')
+        ctx.drawImage(this,0,0)
+        var para = document.getElementById('step0para')
+        para.innerHTML = "resolution "+step0canvas.width+" \u00D7 "+step0canvas.height
+      }
+      function step0_onerror() {
+        alert("Error loading image")
+      }
+      function step0_activate() {
+        document.getElementById('step0file').onchange = function(e) {
+          img = new Image()
+          img.onload= step0_onload
+          img.onerror = step0_onerror
+          img.src = URL.createObjectURL(this.files[0])
+        }
+      }
+
+      function step_activate(step) {
+        const numsteps=4
+        if( step==1 && (step0canvas==undefined || step0canvas.width<1 || step0canvas.height<1) ) {
+          alert("First load an image")
+          return
+        }
+        // Generate steps overview (button bar at the top)
+        for(i=0; i<numsteps; i++) {
+          var elm=document.getElementById('button'+i)
+          const ii=i // kill closure
+          if( i<step ) {
+            elm.className="normalbutton"
+            elm.onclick=function(){step_activate(ii)} // can jump back
+          } else if( i==step ) {
+            elm.className="normalbutton"
+            elm.onclick=null                          // can NOT jump to self
+          } else {
+            elm.className="disabledbutton"
+            elm.onclick=null                          // can NOt skip steps
+          }
+        }
+        // Show the div with step `step`, hide all other steps
+        for(i=0; i<numsteps; i++) {
+          elm=document.getElementById('step'+i)
+          if( i==step ) 
+            elm.style.display = "block";
+          else
+            elm.style.display = "none";
+        }
+        // Activate step `step` (special check fro 1->2)
+        window["step"+step+'_activate']()
+      }
+      
+      function main() {
+        step_activate(0)
+      }
+    </script>
+  </head>
+
+  <body onload="main()">
+    <p id="overview">
+      <span id='button0'>LOAD</span>
+      &#x1f882;
+      <span id='button1'>GREY</span>
+      &#x1f882;
+      <span id='button2'>DART</span>
+      &#x1f882;
+      <span id='button3'>DONE</span>
+    </p>
+    
+    <div id="step0">
+      <hr>
+      <p><input class="normalbutton" type="file" id="step0file"></p>
+      <p><canvas id="step0canvas" width="0" height="0"></canvas><p>
+      <p id="step0para">(no image loaded)</p>
+      <hr>
+      <p><span class="normalbutton" onclick='step_activate(1)'>next</span>
+    </div>
+    
+    <div id="step1">
+      <hr>
+      <p id="step1pararange">...</p>
+      <p>map min <input type="range" min="0" max="255" id="step1yminslider"><span id="step1yminvalue">...</span></p>
+      <p>map max <input type="range" min="0" max="255" id="step1ymaxslider"><span id="step1ymaxvalue">...</span></p>
+      <canvas id="step1canvas" width="0" height="0"></canvas>
+      <p id="step1paranum">...</p>
+      <hr>
+      <p><span class="normalbutton" onclick='step_activate(2)'>next</span>
+    </div>
+    
+    <div id="step2">
+      <hr>
+      <p>dartsize <input type="range" min="4" max="75" id="step2sizeslider"><span id="step2sizevalue">...</span></p>
+      <p>dartmargin <input type="range" min="0" max="15" id="step2marginslider"><span id="step2marginvalue">...</span></p>
+      <canvas id="step2canvas" width="0" height="0"></canvas>
+      <hr>
+      <p><span class="normalbutton" onclick='step_activate(3)'>next</span>
+    </div>
+    
+    <div id="step3">
+      <hr>
+      <canvas id="step3canvas"></canvas>
+      <hr>
+    </div>
+    
+  </body>
+
+</html>
