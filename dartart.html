@@ -10,8 +10,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Maarten Pennings">
     <style>
-      .normalbutton   {padding:3px; border: 1px solid black    ; background-color:lightgray; border-radius:6px; color:black   ; }
-      .disabledbutton {padding:3px; border: 1px solid darkgray ; background-color:lightgray; border-radius:6px; color:darkgrey; }
+      .normalbutton   {padding:3px; border: 1px solid black    ; background-color:lightgray; border-radius:6px; color:black   ; text-decoration: none; }
+      .disabledbutton {padding:3px; border: 1px solid darkgray ; background-color:lightgray; border-radius:6px; color:darkgrey; text-decoration: none; }
     </style>
     <script type="text/javascript">
       var step0canvas // loaded 
@@ -28,6 +28,9 @@
         step3canvas.height = step2canvas.height
         var ctx3 = step3canvas.getContext('2d')
         ctx3.putImageData(data2,0,0)
+        // Create save button's href
+        var image = document.getElementById("step3canvas").toDataURL("image/png").replace("image/png", "image/octet-stream")
+        document.getElementById("save").setAttribute("href", image)
       }
 
       function step2_drawdarts(dartsize, dartmargin, data1, ctx2) {
@@ -248,11 +251,11 @@
   <body onload="main()">
     <p id="overview">
       <span id='button0'>LOAD</span>
-      &#x1f882;
+      &#x27A4;
       <span id='button1'>GREY</span>
-      &#x1f882;
+      &#x27A4;
       <span id='button2'>DART</span>
-      &#x1f882;
+      &#x27A4;
       <span id='button3'>DONE</span>
     </p>
     
@@ -262,7 +265,7 @@
       <p><canvas id="step0canvas" width="0" height="0"></canvas><p>
       <p id="step0para">(no image loaded)</p>
       <hr>
-      <p><span class="normalbutton" onclick='step_activate(1)'>next</span>
+      <p><span class="normalbutton" onclick='step_activate(1)'>next</span></p>
     </div>
     
     <div id="step1">
@@ -273,7 +276,7 @@
       <canvas id="step1canvas" width="0" height="0"></canvas>
       <p id="step1paranum">...</p>
       <hr>
-      <p><span class="normalbutton" onclick='step_activate(2)'>next</span>
+      <p><span class="normalbutton" onclick='step_activate(2)'>next</span></p>
     </div>
     
     <div id="step2">
@@ -282,13 +285,14 @@
       <p>dartmargin <input type="range" min="0" max="15" id="step2marginslider"><span id="step2marginvalue">...</span></p>
       <canvas id="step2canvas" width="0" height="0"></canvas>
       <hr>
-      <p><span class="normalbutton" onclick='step_activate(3)'>next</span>
+      <p><span class="normalbutton" onclick='step_activate(3)'>next</span></p>
     </div>
     
     <div id="step3">
       <hr>
       <canvas id="step3canvas"></canvas>
       <hr>
+      <p><a id="save" class="normalbutton" download="dartart.png">save</a></p>
     </div>
     
   </body>
