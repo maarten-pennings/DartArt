@@ -3,6 +3,9 @@ Convert image pixels to small darts, pixel luminance is mapped to convexness of 
 
 Inspired by the book [Opt Art](https://press.princeton.edu/books/hardcover/9780691164069/opt-art) by Robert Bosch.
 
+[Make your own.](https://maarten-pennings.github.io/DartArt/dartart.html)
+
+
 ## Introduction
 
 Converting images to "DartArt" consists of two steps.
@@ -17,6 +20,7 @@ The whole application is implemented in javascript.
 Just download and click [dartart.html](dartart.html).
 
 Instead of downloading, you can also run it via [github.io](https://maarten-pennings.github.io/DartArt/dartart.html).
+
 
 ## Examples
 
